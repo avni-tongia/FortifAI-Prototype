@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+*.pkl
+generated_legit_images/
+generated_fraud_images/
