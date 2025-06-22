@@ -3,6 +3,12 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from neo4j import GraphDatabase
 
+st.set_page_config(
+    page_title="Review Authenticity Detection",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # Load transformer model for review classification
 MODEL_NAME = "distilbert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)

@@ -9,6 +9,12 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 
+st.set_page_config(
+    page_title="Product Listing Fraud Detection",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # Load pretrained sentence transformer model for text embedding
 text_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 

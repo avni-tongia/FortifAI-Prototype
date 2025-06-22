@@ -6,7 +6,11 @@ import random
 import datetime
 import os
 
-
+st.set_page_config(
+    page_title="Buyer Transaction Fraud Detection",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 # Load pre-trained fraud detection model and encoders
 model = pickle.load(open('xgb_transaction_model_v2.pkl', 'rb'))
 label_enc_ip = pickle.load(open('label_encoder_ip_v2.pkl', 'rb'))

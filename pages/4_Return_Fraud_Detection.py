@@ -6,6 +6,12 @@ import cv2
 import matplotlib.pyplot as plt
 from prophet import Prophet
 
+st.set_page_config(
+    page_title="📦 Return Fraud Detection",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # --------------------------------------------------------
 # Image Similarity Check (MSE based)
 # --------------------------------------------------------

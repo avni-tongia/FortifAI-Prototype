@@ -40,7 +40,7 @@ pip install -r requirements.txt
 ## Initialize Product Listing Pools
 
 ```bash
-python initalize_listing_text_image_pools.py
+python initialize_listing_text_image_pools.py
 ```
 
 Generates:
@@ -83,7 +83,7 @@ Generates:
 ## Run Streamlit App
 
 ```bash
-streamlit run app.py
+streamlit run .
 ```
 
 Access browser: `http://localhost:8501`
