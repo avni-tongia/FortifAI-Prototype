@@ -10,3 +10,6 @@ xgboost
 pandas
 transformers
 neo4j
+prophet
+opencv-python
+matplotlib
