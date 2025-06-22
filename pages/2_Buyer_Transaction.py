@@ -7,14 +7,10 @@ import random
 import datetime
 import os
 
-# --------------------------------------------------------
-# Load full upgraded model and encoders
-# --------------------------------------------------------
 model = pickle.load(open('xgb_transaction_model_v2.pkl', 'rb'))
 label_enc_ip = pickle.load(open('label_encoder_ip_v2.pkl', 'rb'))
 label_enc_vpn = pickle.load(open('label_encoder_vpn_v2.pkl', 'rb'))
 
-# Load behavioral profiles
 profile_path = "account_profiles_v2.csv"
 if not os.path.exists(profile_path):
     st.error("account_profiles_v2.csv not found")
@@ -22,9 +18,8 @@ if not os.path.exists(profile_path):
 
 account_df = pd.read_csv(profile_path)
 
-# --------------------------------------------------------
-# Streamlit UI (Phase 2 upgraded)
-# --------------------------------------------------------
+
+# streamlit
 st.title("💳 Buyer Transaction Fraud Detection (Behavioral Integrated)")
 account_id = st.text_input("Enter Account ID (e.g., ACC001):")
 cart_total = st.number_input("Cart Total ($)", 0.0, 10000.0, 100.0)
@@ -50,7 +45,7 @@ if account_id and account_id in account_df['account_id'].values:
     time_of_purchase = datetime.datetime.now().hour
     browser_fingerprint = random.randint(100000, 999999)
     vpn_used = random.choices(['Yes', 'No'], weights=[0.3, 0.7])[0]
-    #vpn_used = 'Yes'
+
 
     st.write(f"Device ID: {device_id}, IP Country: {ip_country}, VPN: {vpn_used}")
 
