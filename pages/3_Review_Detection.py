@@ -35,7 +35,7 @@ if st.button("Analyze Review"):
     st.write("Prediction:", "AI-Generated" if is_ai_generated else "Human-Like")
 
     # Retrieve reviewer count from Neo4j graph
-    with driver.session() as session:
+    with driver.session(database="neo4j") as session:
         query = (
             "MATCH (u:User)-[:REVIEWED]->(p:Product {id: $product_id}) "
             "RETURN count(u) AS num_reviewers"

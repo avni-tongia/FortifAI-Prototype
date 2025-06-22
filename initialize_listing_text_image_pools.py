@@ -105,8 +105,9 @@ pickle.dump(fraud_text_embeddings, open('fraud_text_pool.pkl', 'wb'))
 # -------------------------------------------------------
 
 # You provide 2 legit & 2 fraud seed images manually beforehand:
-legit_bases = ['legit_sample1.jpg', 'legit_sample2.jpg']
-fraud_bases = ['fraud_sample1.jpg', 'fraud_sample2.jpg']
+legit_bases = ['sample data/legit_sample1.jpg', 'sample data/legit_sample2.jpg']
+fraud_bases = ['sample data/fraud_sample1.jpg', 'sample data/fraud_sample2.jpg']
+
 
 # Create folders for augmented images
 os.makedirs('generated_legit_images', exist_ok=True)
