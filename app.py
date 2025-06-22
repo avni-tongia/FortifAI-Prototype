@@ -9,11 +9,3 @@ st.set_page_config(
 
 # App header
 st.title("🛡️ Unified Self-Learning Fraud Detection Platform")
-
-# Intro description
-st.markdown("""
-Welcome to your AI-powered fraud detection system:
-- Product Listing Fraud (Image + Text Embeddings)
-- Buyer Transaction Fraud (Tabular XGBoost)
-- Real-time self-learning with human feedback loop.
-""")
