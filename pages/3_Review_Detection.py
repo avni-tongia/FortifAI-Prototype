@@ -7,7 +7,7 @@ from neo4j import GraphDatabase
 # --------------------------------------------------------
 # Load NLP DeBERTa-v3 model for AI-generated review detection
 # --------------------------------------------------------
-MODEL_NAME = "microsoft/deberta-v3-small"
+MODEL_NAME = "distilbert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=2)
 

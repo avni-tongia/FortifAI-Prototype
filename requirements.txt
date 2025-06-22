@@ -8,3 +8,5 @@ pillow
 numpy
 xgboost
 pandas
+transformers
+neo4j
