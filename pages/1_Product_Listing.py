@@ -9,18 +9,14 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 
-# -----------------------------------------------------
-# 🔷 Load pretrained models for text and image embeddings
-# -----------------------------------------------------
+
 text_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 resnet = models.resnet152(pretrained=True)
 resnet.eval()
 resnet = torch.nn.Sequential(*(list(resnet.children())[:-1]))
 
-# -----------------------------------------------------
-# 🔷 Image preprocessing pipeline for ResNet input
-# -----------------------------------------------------
+#ResNet input
 transform_pipeline = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -28,9 +24,6 @@ transform_pipeline = transforms.Compose([
                          std=[0.229, 0.224, 0.225])
 ])
 
-# -----------------------------------------------------
-# 🔷 Embedding extraction functions
-# -----------------------------------------------------
 def get_image_embedding(image_bytes):
     image = Image.open(image_bytes).convert('RGB')
     tensor = transform_pipeline(image).unsqueeze(0)
@@ -41,9 +34,6 @@ def get_image_embedding(image_bytes):
 def get_text_embedding(text):
     return text_model.encode([text])[0]
 
-# -----------------------------------------------------
-# 🔷 Load existing embedding pools
-# -----------------------------------------------------
 try:
     legit_text_pool = pickle.load(open('legit_text_pool.pkl', 'rb'))
     fraud_text_pool = pickle.load(open('fraud_text_pool.pkl', 'rb'))
@@ -53,17 +43,14 @@ except:
     st.error("❌ Embedding pools not found. Please run initializer first.")
     st.stop()
 
-# -----------------------------------------------------
-# 🔷 Streamlit UI Section for Product Listing Fraud Page
-# -----------------------------------------------------
+#Streamlit
+
 st.title("🛒 Product Listing Fraud Detection")
 
 uploaded_file = st.file_uploader("Upload Product Image", type=['jpg', 'jpeg', 'png'])
 product_text = st.text_area("Enter Product Title/Description")
 
-# -----------------------------------------------------
-# 🔷 Fraud detection and similarity scoring
-# -----------------------------------------------------
+# Fraud detection
 if uploaded_file and product_text:
     image_embedding = get_image_embedding(uploaded_file)
     text_embedding = get_text_embedding(product_text)
