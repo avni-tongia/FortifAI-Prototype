@@ -6,10 +6,7 @@ import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
 import random
 
-# --------------------------------------------------------
 # Fully standalone Phase 2 retrainer (No bootstrap file needed)
-# --------------------------------------------------------
-
 # Load behavioral profiles
 profile_df = pd.read_csv("account_profiles_v2.csv")
 
