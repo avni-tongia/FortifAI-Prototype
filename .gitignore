@@ -3,4 +3,8 @@ __pycache__/
 *.pkl
 generated_legit_images/
 generated_fraud_images/
-transaction_bootstrap_pool.csv
+
+account_profiles_v2.csv
+xgb_transaction_model_v2.pkl
+label_encoder_ip_v2.pkl
+label_encoder_vpn_v2.pkl
