@@ -4,21 +4,18 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from neo4j import GraphDatabase
 
-# --------------------------------------------------------
-# Load NLP DeBERTa-v3 model for AI-generated review detection
-# --------------------------------------------------------
+
+#DeBERTa-v3
 MODEL_NAME = "distilbert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=2)
 
-# --------------------------------------------------------
-# Connect to Neo4j graph database (Assuming running locally)
-# --------------------------------------------------------
+#Neo4j graph database (Assuming running locally)
 driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
 
-# --------------------------------------------------------
-# Streamlit UI - Review Detection Page 3
-# --------------------------------------------------------
+
+#streamlit
+
 st.title("✍️ Review Authenticity Detection (Phase 2)")
 
 user_id = st.text_input("Enter User ID")
@@ -30,7 +27,7 @@ cluster_threshold = st.slider("Cluster Size Threshold", 0, 500, 50, 1)
 
 if st.button("Analyze Review"):
 
-    # --- AI model detection ---
+    #AI model detection
     inputs = tokenizer(review_text, return_tensors="pt", padding=True, truncation=True)
     outputs = model(**inputs)
     probs = outputs.logits.softmax(dim=1).detach().numpy()
@@ -41,7 +38,7 @@ if st.button("Analyze Review"):
     st.write(f"AI-Generated Probability: {ai_score*100:.2f}%")
     st.write("Prediction:", "🚩 AI-Generated" if is_ai_generated else "✅ Human-like")
 
-    # --- Neo4j coordination detection ---
+    #Neo4j coordination detection
     with driver.session() as session:
         query = (
             "MATCH (u:User)-[:REVIEWED]->(p:Product {id: $product_id}) "
@@ -56,7 +53,7 @@ if st.button("Analyze Review"):
     is_clustered = num_reviewers >= cluster_threshold
     st.write("Cluster Status:", "🚩 Suspicious Review Cluster" if is_clustered else "✅ No Coordination Detected")
 
-    # --- Final decision ---
+    #Final decision
     if is_ai_generated and is_clustered:
         st.error("❌ 🚩 High Risk: AI-Generated Review inside Review Cluster Detected")
     elif is_ai_generated:
