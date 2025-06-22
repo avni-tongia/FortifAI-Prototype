@@ -1,27 +1,31 @@
 
-# 🛡️ Self-Learning Multimodal Fraud Detection System (Text + Image)
+# 🛡️ Unified Self-Learning Multimodal + Transaction Fraud Detection System
 
 ---
 
 ## ✅ What's Included
 
-- `app.py` → Fully self-learning Streamlit app (Text + Image fraud detection)
-- `generate_full_combined_initializer.py` → Full automatic pool generator (text & image)
-- `Dockerfile` → Full Docker deployment file
-- `requirements.txt` → Clean dependency list for pip installation
-- `.gitignore` → To avoid tracking unnecessary files in Git
+- `app.py` → Streamlit multi-page entry point
+- `pages/1_Product_Listing.py` → Product Listing Fraud (Image + Text Embedding)
+- `pages/2_Buyer_Transaction.py` → Simplified Transaction Fraud (Reduced Inputs)
+- `generate_full_combined_initializer.py` → Pool generator for image + text
+- `generate_transaction_bootstrap.py` → Bootstrap synthetic transaction dataset
+- `train_transaction_model.py` → Train transaction model (XGBoost)
+- `Dockerfile` → Docker deployment file
+- `requirements.txt` → All dependencies
+- `.gitignore` → Clean repo tracking
 
 ---
 
-## 🔧 Correct GitHub Structure
+## 🔧 GitHub Structure Best Practices
 
-When pushing this repo to GitHub, ensure:
+When pushing to GitHub, ensure you **DO NOT commit**:
 
-- DO NOT commit your `venv/` folder.
-- DO NOT commit `.pkl` generated pool files.
-- DO NOT commit generated image augmentation folders.
+- `venv/` folder
+- `.pkl` model or embedding files
+- Generated image augmentation folders
 
-Your `.gitignore` file should contain:
+Your `.gitignore` should include:
 
 ```
 venv/
@@ -33,48 +37,35 @@ generated_fraud_images/
 
 ---
 
-# 🚀 Full Local Development Setup
+# 🚀 Full Setup Instructions
 
-## 1️⃣ Clone your repo (or pull latest version)
+## 1️⃣ Clone Repository
 
 ```bash
 git clone <your-repo-url>
 cd <repo-folder>
 ```
 
-## 2️⃣ Create a new virtual environment (venv)
+## 2️⃣ Create Virtual Environment
 
 ```bash
 python -m venv venv
 ```
 
-### Activate virtual environment:
+### Activate venv:
 
-- **On Windows**:
-
-```bash
-venv\Scripts\activate
-```
-
-- **On Mac/Linux**:
-
-```bash
-source venv/bin/activate
-```
-
-✅ You’ll see `(venv)` appear in your terminal.
+- **Windows:** `venv\Scripts\activate`
+- **Mac/Linux:** `source venv/bin/activate`
 
 ---
 
-## 3️⃣ Install all dependencies:
-
-Using `requirements.txt`:
+## 3️⃣ Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-✅ This installs:
+✅ Installs:
 
 - streamlit
 - torch
@@ -83,93 +74,91 @@ pip install -r requirements.txt
 - scikit-learn
 - pillow
 - numpy
-
-You only need to install ONCE per virtual environment.
-
----
-
-## 4️⃣ Prepare initial images
-
-In your project folder, place:
-
-- `legit_sample1.jpg`
-- `legit_sample2.jpg`
-- `fraud_sample1.jpg`
-- `fraud_sample2.jpg`
-
-These seed images are used by the initializer to create starting embedding pools.
+- xgboost
+- pandas
 
 ---
 
-## 5️⃣ Generate your initial embedding pools:
-
-Run the combined initializer:
+## 4️⃣ Initialize Product Listing Pools
 
 ```bash
 python generate_full_combined_initializer.py
 ```
 
-✅ This creates:
+This generates:
 
 - `legit_text_pool.pkl`
 - `fraud_text_pool.pkl`
 - `legit_image_pool.pkl`
 - `fraud_image_pool.pkl`
 
-These will be used by your Streamlit app for inference.
+---
+
+## 5️⃣ Initialize Transaction Component
+
+```bash
+python generate_transaction_bootstrap.py
+python train_transaction_model.py
+```
+
+This generates:
+
+- `transaction_bootstrap_pool.csv`
+- `xgb_transaction_model.pkl`
+- `label_encoder_ip.pkl`
+- `label_encoder_vpn.pkl`
 
 ---
 
-## 6️⃣ Launch the Streamlit App:
+## 6️⃣ Run Streamlit App
 
 ```bash
 streamlit run app.py
 ```
 
-Go to your browser → `http://localhost:8501` → App will open fully.
+Access in browser: `http://localhost:8501`
 
-✅ The app is now fully functional and self-learning.
+✅ Now you have two fully functional pages:
+
+- **Page 1:** Product Listing Fraud Detection (semantic embeddings)
+- **Page 2:** Buyer Transaction Fraud Detection (production-style reduced-input simulator)
 
 ---
 
-# 🔁 Daily Workflow Summary
+## 🔁 Daily Workflow Summary
 
-| Action | Required? |
-|--------|-----------|
-| Reinstall dependencies? | ❌ No (only once per venv) |
-| Re-initialize pools? | ❌ No (unless you want fresh pools) |
+| Task | Required? |
+|------|------------|
+| Reinstall dependencies? | ❌ No |
+| Re-initialize pools? | ❌ No (unless resetting data) |
 | Activate venv? | ✅ Yes |
-| Run Streamlit? | ✅ Yes |
+| Launch Streamlit? | ✅ Yes |
 
 ---
 
 # 🔨 Optional Docker Deployment
 
-## Build Docker Image:
+### Build Docker Image
 
 ```bash
-docker build -t multimodal-fraud-detector .
+docker build -t unified-fraud-detector .
 ```
 
-## Run Docker Container:
+### Run Docker Container
 
 ```bash
-docker run -p 8501:8501 multimodal-fraud-detector
+docker run -p 8501:8501 unified-fraud-detector
 ```
 
-## Open browser:
-
-```
-http://localhost:8501
-```
-
-✅ With Docker, you don’t need to manage virtual environments anymore.
+Access browser as usual: `http://localhost:8501`
 
 ---
 
-# ✅ After this setup:
-- Your repo remains clean.
-- Your virtual environment stays isolated (ignored by git).
-- Anyone can reproduce your full environment easily using `requirements.txt`.
+# ✅ After This Setup
+
+- Clean production-grade repo structure.
+- Virtual environment fully isolated from Git.
+- Full reproducibility using `requirements.txt`.
 
 ---
+
