@@ -22,7 +22,7 @@ account_df = pd.read_csv(profile_path)
 
 # Streamlit UI Setup
 
-st.title("Buyer Transaction Fraud Detection (Behavioral Model)")
+st.title("Buyer Transaction Fraud Detection")
 
 # User inputs: basic transaction details
 account_id = st.text_input("Enter Account ID (e.g., ACC001):")

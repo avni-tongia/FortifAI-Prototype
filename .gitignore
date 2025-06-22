@@ -8,3 +8,6 @@ account_profiles_v2.csv
 xgb_transaction_model_v2.pkl
 label_encoder_ip_v2.pkl
 label_encoder_vpn_v2.pkl
+
+original_temp.jpg
+returned_temp.jpg

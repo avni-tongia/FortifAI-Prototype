@@ -25,7 +25,7 @@ def compare_images(img1_path, img2_path, threshold=1500):
 # --------------------------------------------------------
 # Streamlit UI - Return Fraud Detection (Page 4)
 # --------------------------------------------------------
-st.title("📦 Return Fraud Detection (Phase 2)")
+st.title("📦 Return Fraud Detection")
 
 st.subheader("Step 1: Image Similarity Check")
 
