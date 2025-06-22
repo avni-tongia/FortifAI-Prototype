@@ -1,0 +1,84 @@
+🔍 Project Summary: FortifAI Prototype
+
+FortifAI is a multi-module fraud detection system built using Streamlit. It uses computer vision, natural language processing, behavioral analytics, and graph databases to identify and flag fraudulent activity across e-commerce platforms.
+
+
+
+1. Product Listing Fraud Detection
+
+Purpose:
+Detect if a product listing (image + description) is potentially fraudulent by comparing it with known legitimate and fraudulent listings.
+
+How it works:
+	•	Uses ResNet-152 to extract image embeddings.
+	•	Uses SentenceTransformer (all-mpnet-base-v2) for textual embeddings.
+	•	Compares the input image and text embeddings with stored pools of known fraud and legit samples using cosine similarity.
+	•	If similarity to fraud pool exceeds 0.8 and is higher than legit, the product is flagged for quarantine.
+	•	Moderator can manually override the model decision.
+
+Files Used:
+legit_text_pool.pkl, fraud_text_pool.pkl, legit_image_pool.pkl, fraud_image_pool.pkl
+
+
+2. Buyer Transaction Fraud Detection
+
+Purpose:
+Identify suspicious buyer transactions based on behavioral features and real-time inputs.
+
+How it works:
+	•	Loads a trained XGBoost model along with label encoders for categorical variables.
+	•	Takes user input like account ID, cart value, and simulates session info (VPN use, IP country, etc.).
+	•	Combines real-time and profile features (from account_profiles_v2.csv) to predict fraud probability.
+	•	If probability > 0.80 → transaction is blocked.
+
+Key Features Used:
+	•	Total orders, average order value, past chargebacks, session behavior, etc.
+	•	Real-time simulation of device ID, IP, and VPN status.
+
+
+
+3. Review Authenticity Detection
+
+Purpose:
+Detect fake reviews using language models and suspicious reviewer networks.
+
+How it works:
+	•	Uses a fine-tuned DistilBERT model for AI-generated text classification.
+	•	Connects to Neo4j Graph Database to analyze reviewer network (reviewer cluster size).
+	•	Combines AI-generation score and cluster size to assess risk.
+
+Logic:
+	•	If AI-generated and cluster is large → High risk.
+	•	If either one is suspicious → Warning.
+	•	Else → Safe review.
+
+
+
+4. Return Fraud Detection
+
+Purpose:
+Detect cases where customers return fake/damaged products.
+
+How it works:
+
+Step 1: Image Similarity
+	•	Compares uploaded images (original vs. returned) using Mean Squared Error (MSE) after resizing.
+	•	If MSE > 1500 → flagged as mismatch.
+
+Step 2: Return Forecast Anomaly Detection
+	•	Uses Facebook Prophet to forecast return volumes.
+	•	Takes historical CSV data (ds, y) and detects anomalies in return patterns.
+
+
+
+Overall Tech Stack
+
+Component	Library/Tool
+Frontend	Streamlit
+Image Embedding	PyTorch + ResNet152
+Text Embedding	Sentence Transformers
+Classification	XGBoost, Transformers (Hugging Face)
+Time Series Forecasting	Facebook Prophet
+Graph DB	Neo4j
+Storage	Pickle files, CSVs
+
