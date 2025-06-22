@@ -55,7 +55,7 @@ pip install -r requirements.txt
 ## 4️⃣ Initialize Product Listing Pools
 
 ```bash
-python generate_full_combined_initializer.py
+python initalize_listing_text_image_pools.py
 ```
 
 Generates:
@@ -84,7 +84,7 @@ Generates:
 ### Train Phase 2 Behavioral Model
 
 ```bash
-python phase2_self_learning_retrainer_standalone.py
+python train_behaviour_model.py
 ```
 
 Generates:
