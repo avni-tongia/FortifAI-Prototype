@@ -6,7 +6,7 @@ from xgboost import XGBClassifier
 import pickle
 
 # Load generated profiles
-profiles = pd.read_csv("account_profiles.csv")
+profiles = pd.read_csv("account_profiles_v2.csv")
 
 # Create synthetic transactions for each profile
 transactions = []
@@ -15,7 +15,7 @@ for _, row in profiles.iterrows():
         cart_total = np.random.randint(100, 5000)
         account_age_days = np.random.randint(1, 365)
         vpn_used = np.random.choice(['Yes', 'No'])
-        ip_country = np.random.choice(['US', 'IN', 'RU', 'CN', 'NG', 'BR'])
+        ip_country = np.random.choice(['US', 'IN', 'RU', 'CN', 'NG', 'BR', 'DE', 'FR', 'AU', 'SG'])
 
         # New weighted rule-based fraud label
         fraud_score = 0
