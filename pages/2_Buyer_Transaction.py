@@ -64,23 +64,21 @@ if account_id and account_id in account_df['account_id'].values:
     vpn_encoded = label_enc_vpn.transform([vpn_used])[0]
 
     # Construct feature vector for prediction
-    full_features = np.array([[
-        device_id,
-        ip_encoded,
-        time_of_purchase,
-        cart_total,
-        account_age_days,
-        browser_fingerprint,
-        vpn_encoded,
-        prof_row['total_orders'],
-        prof_row['total_spend'],
-        prof_row['avg_order_value'],
-        prof_row['first_time_buyer'],
-        prof_row['past_chargebacks'],
-        prof_row['avg_session_length'],
-        prof_row['avg_form_fill_time'],
-        prof_row['click_pattern_abnormality']
-    ]])
+    full_features = np.array([[  # ONLY the 12 features used in training
+    prof_row['total_orders'],
+    prof_row['total_spend'],
+    prof_row['avg_order_value'],
+    prof_row['first_time_buyer'],
+    prof_row['past_chargebacks'],
+    prof_row['avg_session_length'],
+    prof_row['avg_form_fill_time'],
+    prof_row['click_pattern_abnormality'],
+    cart_total,
+    account_age_days,
+    vpn_encoded,
+    ip_encoded
+        ]])
+
 
     # Predict fraud probability
     fraud_proba = model.predict_proba(full_features)[0][1]
