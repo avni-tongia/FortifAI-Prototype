@@ -54,8 +54,7 @@ if account_id and account_id in account_df['account_id'].values:
     ip_country = random.choice(['US', 'IN', 'CN', 'RU', 'BR', 'NG', 'DE', 'JP'])
     time_of_purchase = datetime.datetime.now().hour
     browser_fingerprint = random.randint(100000, 999999)
-    #vpn_used = random.choices(['Yes', 'No'], weights=[0.7, 0.3])[0]
-    vpn_used = 'Yes'
+    vpn_used = random.choices(['Yes', 'No'], weights=[0.7, 0.3])[0]
 
     st.write(f"Device ID: {device_id}, IP Country: {ip_country}, VPN Used: {vpn_used}")
 
