@@ -1,42 +1,53 @@
+
 import pandas as pd
 import numpy as np
-import pickle
-import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
-import random
+from xgboost import XGBClassifier
+import pickle
 
-# Standalone Phase 2 Training Script for Transaction Fraud Model
+# Load generated profiles
+profiles = pd.read_csv("account_profiles.csv")
 
-# Load account-level behavioral profiles
-profile_df = pd.read_csv("account_profiles_v2.csv")
+# Create synthetic transactions for each profile
+transactions = []
+for _, row in profiles.iterrows():
+    for _ in range(10):  # simulate multiple transactions per user
+        cart_total = np.random.randint(100, 5000)
+        account_age_days = np.random.randint(1, 365)
+        vpn_used = np.random.choice(['Yes', 'No'])
+        ip_country = np.random.choice(['US', 'IN', 'RU', 'CN', 'NG', 'BR'])
 
-# Generate synthetic transaction data for each account
-synthetic_transactions = []
+        # New weighted rule-based fraud label
+        fraud_score = 0
 
-for index, row in profile_df.iterrows():
-    # Each account generates between 10 and 50 transactions
-    for _ in range(random.randint(10, 50)):
-        device_id = random.randint(1000, 9999)
-        ip_country = random.choice(['US', 'IN', 'CN', 'RU', 'BR', 'NG', 'DE', 'JP'])
-        time_of_purchase = random.randint(0, 23)
-        cart_total = random.uniform(50, 5000)
-        account_age_days = random.randint(0, 365)
-        browser_fingerprint = random.randint(100000, 999999)
-        vpn_used = random.choice(['Yes', 'No'])
+        # Past behavioral factors
+        if row['past_chargebacks'] > 1:
+            fraud_score += 4  # VERY HIGH weight
+        if row['first_time_buyer'] == 1:
+            fraud_score += 3  # HIGH weight
 
-        # Rule-based fraud label: early account + high cart + VPN
-        fraud_label = 1 if vpn_used == 'Yes' and account_age_days < 30 and cart_total > 2000 else 0
+        # Session behavior factors
+        if row['click_pattern_abnormality'] == 1:
+            fraud_score += 2
+        if row['avg_form_fill_time'] < 2 or row['avg_form_fill_time'] > 20:
+            fraud_score += 2
+        if row['avg_session_length'] < 30:
+            fraud_score += 1
 
-        transaction = {
-            'account_id': row['account_id'],
-            'device_id': device_id,
-            'ip_country': ip_country,
-            'time_of_purchase': time_of_purchase,
-            'cart_total': cart_total,
-            'account_age_days': account_age_days,
-            'browser_fingerprint': browser_fingerprint,
-            'vpn_used': vpn_used,
-            'label': fraud_label,
+        # Transaction real-time features
+        if vpn_used == 'Yes':
+            fraud_score += 3
+        if ip_country in ['RU', 'NG', 'CN']:
+            fraud_score += 3
+        if cart_total > 2000:
+            fraud_score += 2
+        if account_age_days < 30:
+            fraud_score += 2
+
+        # Final label based on threshold score
+        fraud_label = 1 if fraud_score >= 5 else 0
+
+        transactions.append({
             'total_orders': row['total_orders'],
             'total_spend': row['total_spend'],
             'avg_order_value': row['avg_order_value'],
@@ -44,45 +55,43 @@ for index, row in profile_df.iterrows():
             'past_chargebacks': row['past_chargebacks'],
             'avg_session_length': row['avg_session_length'],
             'avg_form_fill_time': row['avg_form_fill_time'],
-            'click_pattern_abnormality': row['click_pattern_abnormality']
-        }
+            'click_pattern_abnormality': row['click_pattern_abnormality'],
+            'cart_total': cart_total,
+            'account_age_days': account_age_days,
+            'vpn_used': vpn_used,
+            'ip_country': ip_country,
+            'fraud_label': fraud_label
+        })
 
-        synthetic_transactions.append(transaction)
+# Convert to dataframe
+tx = pd.DataFrame(transactions)
 
-# Convert the transaction list to a DataFrame
-df = pd.DataFrame(synthetic_transactions)
+# Encode categorical variables
+vpn_encoder = LabelEncoder()
+ip_encoder = LabelEncoder()
 
-# Encode categorical fields for modeling
-label_enc_ip = LabelEncoder()
-df['ip_country_encoded'] = label_enc_ip.fit_transform(df['ip_country'])
+tx['vpn_encoded'] = vpn_encoder.fit_transform(tx['vpn_used'])
+tx['ip_encoded'] = ip_encoder.fit_transform(tx['ip_country'])
 
-label_enc_vpn = LabelEncoder()
-df['vpn_used_encoded'] = label_enc_vpn.fit_transform(df['vpn_used'])
+# Save encoders
+with open("label_encoder_vpn_v2.pkl", "wb") as f:
+    pickle.dump(vpn_encoder, f)
+with open("label_encoder_ip_v2.pkl", "wb") as f:
+    pickle.dump(ip_encoder, f)
 
-# Define feature set for model training
-features = [
-    'device_id', 'ip_country_encoded', 'time_of_purchase',
-    'cart_total', 'account_age_days', 'browser_fingerprint', 'vpn_used_encoded',
-    'total_orders', 'total_spend', 'avg_order_value',
-    'first_time_buyer', 'past_chargebacks',
-    'avg_session_length', 'avg_form_fill_time', 'click_pattern_abnormality'
-]
+# Train model
+features = ['total_orders', 'total_spend', 'avg_order_value', 'first_time_buyer',
+            'past_chargebacks', 'avg_session_length', 'avg_form_fill_time',
+            'click_pattern_abnormality', 'cart_total', 'account_age_days',
+            'vpn_encoded', 'ip_encoded']
+X = tx[features]
+y = tx['fraud_label']
 
-X = df[features].values
-y = df['label'].values
-
-# Train XGBoost classification model
-model = xgb.XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+model = XGBClassifier()
 model.fit(X, y)
 
-# Save trained model and encoders
-with open('xgb_transaction_model_v2.pkl', 'wb') as f:
+# Save model
+with open("xgb_transaction_model_v2.pkl", "wb") as f:
     pickle.dump(model, f)
 
-with open('label_encoder_ip_v2.pkl', 'wb') as f:
-    pickle.dump(label_enc_ip, f)
-
-with open('label_encoder_vpn_v2.pkl', 'wb') as f:
-    pickle.dump(label_enc_vpn, f)
-
-print("Standalone Phase 2 training completed. Model and encoders saved.")
+print("Training complete. Model saved.")
