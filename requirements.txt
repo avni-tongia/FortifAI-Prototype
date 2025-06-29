@@ -13,3 +13,4 @@ neo4j
 prophet
 opencv-python
 matplotlib
+shap

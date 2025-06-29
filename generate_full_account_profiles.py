@@ -8,7 +8,7 @@ import random
 
 account_profiles = []
 
-for account_id in range(1, 21):
+for account_id in range(1, 501):
     total_orders = random.randint(0, 100)
     total_spend = total_orders * random.uniform(50, 300)
     avg_order_value = total_spend / total_orders if total_orders > 0 else 0
@@ -18,7 +18,7 @@ for account_id in range(1, 21):
     # Simulated behavioral attributes
     avg_session_length = random.uniform(30, 900)  # in seconds
     avg_form_fill_time = random.uniform(2, 15)    # in seconds
-    click_pattern_abnormality = random.uniform(0, 1)  # 0 = normal, 1 = high anomaly
+    #click_pattern_abnormality = random.uniform(0, 1)  # 0 = normal, 1 = high anomaly
 
     profile = {
         'account_id': f'ACC{account_id:03d}',
@@ -29,7 +29,7 @@ for account_id in range(1, 21):
         'past_chargebacks': past_chargebacks,
         'avg_session_length': round(avg_session_length, 2),
         'avg_form_fill_time': round(avg_form_fill_time, 2),
-        'click_pattern_abnormality': round(click_pattern_abnormality, 2)
+        #'click_pattern_abnormality': round(click_pattern_abnormality, 2)
     }
 
     account_profiles.append(profile)

@@ -24,11 +24,11 @@ for _, row in profiles.iterrows():
         if row['past_chargebacks'] > 1:
             fraud_score += 4  # VERY HIGH weight
         if row['first_time_buyer'] == 1:
-            fraud_score += 3  # HIGH weight
+            fraud_score += 1  
 
         # Session behavior factors
-        if row['click_pattern_abnormality'] == 1:
-            fraud_score += 2
+        #if row['click_pattern_abnormality'] == 1:
+            #fraud_score += 2
         if row['avg_form_fill_time'] < 2 or row['avg_form_fill_time'] > 20:
             fraud_score += 2
         if row['avg_session_length'] < 30:
@@ -36,13 +36,13 @@ for _, row in profiles.iterrows():
 
         # Transaction real-time features
         if vpn_used == 'Yes':
-            fraud_score += 3
+            fraud_score += 2
         if ip_country in ['RU', 'NG', 'CN']:
-            fraud_score += 3
-        if cart_total > 2000:
+            fraud_score += 2
+        if cart_total > 5000:
             fraud_score += 2
         if account_age_days < 30:
-            fraud_score += 2
+            fraud_score += 1
 
         # Final label based on threshold score
         fraud_label = 1 if fraud_score >= 5 else 0
@@ -55,7 +55,7 @@ for _, row in profiles.iterrows():
             'past_chargebacks': row['past_chargebacks'],
             'avg_session_length': row['avg_session_length'],
             'avg_form_fill_time': row['avg_form_fill_time'],
-            'click_pattern_abnormality': row['click_pattern_abnormality'],
+            #'click_pattern_abnormality': row['click_pattern_abnormality'],
             'cart_total': cart_total,
             'account_age_days': account_age_days,
             'vpn_used': vpn_used,
@@ -81,8 +81,7 @@ with open("label_encoder_ip_v2.pkl", "wb") as f:
 
 # Train model
 features = ['total_orders', 'total_spend', 'avg_order_value', 'first_time_buyer',
-            'past_chargebacks', 'avg_session_length', 'avg_form_fill_time',
-            'click_pattern_abnormality', 'cart_total', 'account_age_days',
+            'past_chargebacks', 'avg_session_length', 'avg_form_fill_time', 'cart_total', 'account_age_days',
             'vpn_encoded', 'ip_encoded']
 X = tx[features]
 y = tx['fraud_label']
