@@ -31,8 +31,8 @@ def main():
     run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
     # Step 4: Generate Text/Image Pools
-    print("\nGenerating Listing Fraud Pools...")
-    run_command([sys.executable, "initialize_listing_text_image_pools.py"])
+    #print("\nGenerating Listing Fraud Pools...")
+    #run_command([sys.executable, "initialize_listing_text_image_pools.py"])
 
     # Step 5: Generate Account Behavioral Profiles
     print("\n Generating Behavioral Profiles...")
