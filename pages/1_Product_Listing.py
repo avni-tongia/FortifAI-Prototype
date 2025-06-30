@@ -37,8 +37,8 @@ def get_image_embedding(image_bytes):
 def get_text_embedding(text):
     return text_model.encode([text])[0]
 
-def get_price_anomaly_score(price, category, brand, stats_df):
-    group_key = f"{category}_{brand}"
+def get_price_anomaly_score(price, brand, stats_df):
+    group_key = brand
     group_stats = stats_df[stats_df['group_key'] == group_key]
     if not group_stats.empty:
         mean = group_stats['rolling_mean'].values[0]
@@ -47,16 +47,17 @@ def get_price_anomaly_score(price, category, brand, stats_df):
             z_score = abs((price - mean) / std)
         else:
             z_score = 0.0
-        scaler = MinMaxScaler()
-        score = scaler.fit_transform(np.array([[z_score]])).flatten()[0]
-        return score
-    return 0.0
+        # Manually scale Z-score to [0, 1] using an upper cap
+        scaled_score = min(z_score / 3.0, 1.0)
+
+        return scaled_score, z_score, mean, std
+    return 0.0, 0.0, None, None
 
 try:
-    legit_text_pool = pickle.load(open('../legit_text_pool.pkl', 'rb'))
-    fraud_text_pool = pickle.load(open('../fraud_text_pool.pkl', 'rb'))
-    legit_image_embeddings = np.load('../legit_image_embeddings.npy')
-    price_stats_df = pd.read_csv('../price_stats.csv')
+    legit_text_pool = pickle.load(open('legit_text_pool.pkl', 'rb'))
+    fraud_text_pool = pickle.load(open('fraud_text_pool.pkl', 'rb'))
+    legit_image_embeddings = np.load('legit_image_embeddings.npy')
+    price_stats_df = pd.read_csv('price_stats.csv')
 except:
     st.error("Required files not found. Please ensure embeddings and stats files are in place.")
     st.stop()
@@ -66,11 +67,10 @@ st.title("🛡️ Product Listing Fraud Detection System")
 
 uploaded_file = st.file_uploader("Upload Product Image", type=['jpg', 'jpeg', 'png'])
 product_text = st.text_area("Enter Product Title/Description")
-product_price = st.number_input("Enter Product Price (INR)", min_value=0.0, format="%.2f")
-category = st.text_input("Enter Product Category")
+product_price = st.number_input("Enter Product Price (USD)", min_value=0.0, format="%.2f")
 brand = st.text_input("Enter Product Brand")
 
-if uploaded_file and product_text and product_price and category and brand:
+if uploaded_file and product_text and product_price and brand:
     image_embedding = get_image_embedding(uploaded_file)
     text_embedding = get_text_embedding(product_text)
 
@@ -81,9 +81,9 @@ if uploaded_file and product_text and product_price and category and brand:
     image_sim = cosine_similarity([image_embedding], legit_image_embeddings).max()
     image_score = 1 - image_sim
 
-    price_anomaly_score = get_price_anomaly_score(product_price, category, brand, price_stats_df)
+    price_score, z_score_price, mean_price, std_price = get_price_anomaly_score(product_price, brand, price_stats_df)
 
-    final_score = np.clip((0.4 * text_score + 0.4 * price_anomaly_score + 0.2 * image_score), 0, 1)
+    final_score = max(text_score, price_score, image_score)
 
     if final_score >= 0.75:
         risk_level = "High Risk"
@@ -94,12 +94,30 @@ if uploaded_file and product_text and product_price and category and brand:
 
     st.markdown(f"### 🧮 Fraud Risk Score: **{final_score:.2f}** — {risk_level}")
 
+    if mean_price is not None:
+        st.markdown(
+            f"**📊 Price Anomaly Explanation:**  \n"
+            f"- Mean price for `{brand}`: ₹{mean_price:.2f}  \n"
+            f"- Std deviation: ₹{std_price:.2f}  \n"
+            f"- Z-score: {z_score_price:.2f}  \n"
+            f"- Your price: ₹{product_price:.2f}")
+
+    else:
+        st.warning(f"No pricing data found for brand: {brand}")
+
     st.markdown("#### 📊 Contribution Breakdown")
     labels = ['Text', 'Image', 'Price']
-    scores = [text_score, image_score, price_anomaly_score]
-    fig, ax = plt.subplots()
-    ax.barh(labels, scores, color='orange')
+    scores = [text_score, image_score, price_score]
+    fig, ax = plt.subplots(figsize=(5, 2.5))
+    bars = ax.barh(labels, scores, color=['#F39C12', '#3498DB', '#E74C3C'])
+    for bar in bars:
+        width = bar.get_width()
+        ax.text(width + 0.01, bar.get_y() + bar.get_height() / 2,
+                f"{width:.2f}", va='center', fontsize=8)
     ax.set_xlim(0, 1)
+    ax.set_title("Fraud Risk Contribution", fontsize=10)
+    ax.tick_params(axis='y', labelsize=9)
+    ax.tick_params(axis='x', labelsize=8)
     st.pyplot(fig)
 
     st.markdown("#### 📝 Moderator Feedback")
@@ -109,11 +127,13 @@ if uploaded_file and product_text and product_price and category and brand:
             "timestamp": datetime.datetime.now(),
             "description": product_text,
             "price": product_price,
-            "category": category,
             "brand": brand,
             "text_score": text_score,
             "image_score": image_score,
-            "price_score": price_anomaly_score,
+            "price_score": price_score,
+            "z_score_price": z_score_price,
+            "mean_price": mean_price,
+            "std_price": std_price,
             "final_score": final_score,
             "risk_level": risk_level,
             "feedback": feedback
