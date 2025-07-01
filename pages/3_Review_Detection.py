@@ -1,67 +1,139 @@
 import streamlit as st
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import pipeline
 from neo4j import GraphDatabase
+from datetime import datetime, timezone
 
-st.set_page_config(
-    page_title="Review Authenticity Detection",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Review Authenticity Detection", layout="wide")
 
-# Load transformer model for review classification
-MODEL_NAME = "distilbert-base-uncased"
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=2)
+# Using sentiment analysis model only
+sentiment_model = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
-# Configure Neo4j database connection
+# UPDATE THIS WITH YOUR ACTUAL NEO4J PASSWORD
 driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
 
-# UI layout
 st.title("Review Authenticity Detection")
 
-user_id = st.text_input("User ID")
-product_id = st.text_input("Product ID")
+user_id = st.text_input("User ID").strip().upper()
+product_id = st.text_input("Product ID").strip().upper()
 review_text = st.text_area("Review Text")
 
-threshold_ai = st.slider("AI Score Threshold", 0.0, 1.0, 0.85, 0.01)
-cluster_threshold = st.slider("Cluster Size Threshold", 0, 500, 50, 1)
+def display_card(title, content, col):
+    with col:
+        st.markdown(f'''
+        <div style="background-color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; color: black;">
+            <h4>{title}</h4>
+            {content}
+        </div>
+        ''', unsafe_allow_html=True)
 
-if st.button("Analyze Review"):
+def safe_query(session, query, **params):
+    try:
+        result = session.run(query, **params)
+        return result.single()
+    except Exception as e:
+        st.warning(f"Query error: {e}")
+        return None
 
-    # Predict probability of review being AI-generated
-    inputs = tokenizer(review_text, return_tensors="pt", padding=True, truncation=True)
-    outputs = model(**inputs)
-    probs = outputs.logits.softmax(dim=1).detach().numpy()
-    ai_score = probs[0][1]
-    is_ai_generated = ai_score >= threshold_ai
+def detect_ai_patterns(text):
+    """Simple rule-based AI detection"""
+    ai_indicators = 0
+    text_lower = text.lower()
+    
+    # Common AI phrases
+    ai_phrases = [
+        "highly recommend", "excellent product", "outstanding quality",
+        "perfect for", "amazing experience", "definitely recommend",
+        "great value for money", "exceeded expectations"
+    ]
+    
+    for phrase in ai_phrases:
+        if phrase in text_lower:
+            ai_indicators += 1
+    
+    # Check for overly structured text
+    sentences = text.split('.')
+    if len(sentences) > 3 and all(len(s.strip()) > 10 for s in sentences if s.strip()):
+        ai_indicators += 1
+    
+    ai_score = min(ai_indicators / 5.0, 1.0)
+    return ai_score
 
-    st.subheader("Language Model Output")
-    st.write(f"AI-Generated Probability: {ai_score * 100:.2f}%")
-    st.write("Prediction:", "AI-Generated" if is_ai_generated else "Human-Like")
+if st.button("Analyze Review") and user_id and product_id and review_text:
 
-    # Retrieve reviewer count from Neo4j graph
     with driver.session(database="neo4j") as session:
-        query = (
-            "MATCH (u:User)-[:REVIEWED]->(p:Product {id: $product_id}) "
-            "RETURN count(u) AS num_reviewers"
-        )
-        result = session.run(query, product_id=product_id)
+        pid_check = session.run("MATCH (p:Product {id: $pid}) RETURN p.id", pid=product_id).single()
+        uid_check = session.run("MATCH (u:User {id: $uid}) RETURN u.id", uid=user_id).single()
+
+    if not pid_check:
+        st.error(f"❌ Product ID '{product_id}' not found in Neo4j.")
+    if not uid_check:
+        st.error(f"❌ User ID '{user_id}' not found in Neo4j.")
+    if not pid_check or not uid_check:
+        st.stop()
+
+    # AI Detection (Rule-based)
+    ai_score = detect_ai_patterns(review_text)
+    is_ai_generated = ai_score >= 0.70
+
+    col1, col2 = st.columns(2)
+    display_card("Language Model Output", f"<b>AI-Generated Probability:</b> {ai_score * 100:.2f}%<br><b>Prediction:</b> {'AI-Generated' if is_ai_generated else 'Human-Like'}", col1)
+
+    with driver.session(database="neo4j") as session:
+        record = safe_query(session, "MATCH (u:User)-[:REVIEWED]->(p:Product {id: $product_id}) RETURN count(u) AS num_reviewers", product_id=product_id)
+        num_reviewers = record["num_reviewers"] if record and "num_reviewers" in record else 0
+    is_clustered = num_reviewers >= 50
+    display_card("Reviewer Network Analysis", f"<b>Reviewer Count:</b> {num_reviewers}<br><b>Cluster Status:</b> {'Suspicious' if is_clustered else 'Normal'}", col2)
+
+    # Fixed burst detection - check for simultaneous reviews
+    with driver.session(database="neo4j") as session:
+        result = session.run("MATCH (u:User)-[r:REVIEWED]->(p:Product {id: $product_id}) RETURN r.timestamp AS review_time", product_id=product_id)
+        timestamps = [r["review_time"] for r in result if r["review_time"]]
+    
+    # Count reviews at same timestamp
+    timestamp_counts = {}
+    for ts in timestamps:
+        ts_str = str(ts)
+        timestamp_counts[ts_str] = timestamp_counts.get(ts_str, 0) + 1
+    
+    max_simultaneous = max(timestamp_counts.values()) if timestamp_counts else 0
+    burst_detected = max_simultaneous >= 10
+    display_card("Burst Review Check", f"<b>Reviews at same time:</b> {max_simultaneous}<br><b>Burst Status:</b> {'Detected' if burst_detected else 'Normal'}", col1)
+
+    sentiment_result = sentiment_model(review_text)[0]
+    sentiment_label = sentiment_result["label"]
+    overly_positive = sentiment_label.upper() == "POSITIVE"
+    display_card("Sentiment Analysis", f"<b>Sentiment Prediction:</b> {sentiment_label}", col2)
+
+    with driver.session(database="neo4j") as session:
+        result = session.run("MATCH (u:User)-[:REVIEWED]->(p:Product {id: $product_id}) RETURN u.ip AS ip, count(*) AS count_per_ip ORDER BY count_per_ip DESC LIMIT 1", product_id=product_id)
         record = result.single()
-        num_reviewers = record["num_reviewers"] if record else 0
+        max_ip_count = record["count_per_ip"] if record else 0
+    shared_ip_detected = max_ip_count >= 5
+    display_card("IP Cluster Check", f"<b>Max reviewers from a single IP:</b> {max_ip_count}<br><b>IP Cluster Status:</b> {'Suspicious' if shared_ip_detected else 'Normal'}", col1)
 
-    is_clustered = num_reviewers >= cluster_threshold
+    with driver.session(database="neo4j") as session:
+        record = safe_query(session, "MATCH (u:User {id: $user_id})-[:REVIEWED]->(p:Product) RETURN count(p) AS review_count", user_id=user_id)
+        review_count = record["review_count"] if record and "review_count" in record else 0
+        reviewer_spammer = review_count >= 100
+    display_card("User Review Count", f"<b>Total products reviewed:</b> {review_count}<br><b>User Activity Level:</b> {'Suspicious' if reviewer_spammer else 'Normal'}", col2)
 
-    st.subheader("Reviewer Network Analysis")
-    st.write(f"Reviewer Count for Product {product_id}: {num_reviewers}")
-    st.write("Cluster Status:", "Suspicious" if is_clustered else "Normal")
+    # Final Decision + Reasons
+    reasons = []
+    if is_ai_generated: reasons.append("AI-generated")
+    if is_clustered: reasons.append("Reviewer cluster")
+    if burst_detected: reasons.append("Review burst")
+    if shared_ip_detected: reasons.append("Shared IP")
+    if overly_positive: reasons.append("Overly positive sentiment")
+    if reviewer_spammer: reasons.append("User review spam")
 
-    # Risk decision logic
-    if is_ai_generated and is_clustered:
-        st.error("High Risk: AI-generated review in a suspicious cluster.")
-    elif is_ai_generated:
-        st.warning("Review classified as AI-generated.")
-    elif is_clustered:
-        st.warning("Reviewer cluster exceeds normal threshold.")
+    metric_list = " • ".join(["AI score", "Burst check", "Cluster count", "IP grouping", "Sentiment", "User review count"])
+
+    if all([is_ai_generated, is_clustered, burst_detected, shared_ip_detected]):
+        st.error("High Risk: AI-generated review in a clustered, bursty, and IP-linked pattern.")
+    elif reasons:
+        st.warning(f"⚠️ Suspicious review flagged due to: {', '.join(reasons)}.")
     else:
-        st.success("Review is classified as legitimate.")
+        st.success("✅ Review is classified as legitimate.")
+
+    st.caption(f"🧪 Metrics considered: {metric_list}")
