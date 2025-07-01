@@ -70,7 +70,7 @@ left_col, right_col = st.columns([1, 2.2])
 
 # Top row: aligned labels
 with left_col:
-    st.markdown("<div style='padding-top:8px; font-size:16px;'>📷 Upload Product Image</div>", unsafe_allow_html=True)
+    st.markdown("<div style='padding-top:8px; font-size:16px;'> Upload Product Image</div>", unsafe_allow_html=True)
 with right_col:
     st.markdown("**Product Title / Description**")
 
@@ -84,7 +84,7 @@ with right_col:
     # Bottom row: price and brand
     col1, col2 = st.columns(2)
     with col1:
-        product_price = st.number_input("Price (INR)", min_value=0.0, format="%.2f")
+        product_price = st.number_input("Price (USD)", min_value=0.0, format="%.2f")
     with col2:
         brand = st.text_input("Brand Name")
 
@@ -114,21 +114,23 @@ if uploaded_file and product_text and product_price and brand:
     st.markdown(
     f"<h3 style='text-align: center;'> Fraud Risk Score: <span style='color:#FF4B4B'>{final_score:.2f}</span> — {risk_level}</h3>",
     unsafe_allow_html=True)
-    left, right = st.columns([1.5, 1])
+
+    left, right = st.columns([1, 1], gap="small")
 
     with left:
         if mean_price is not None:
             st.markdown("""
                 <div style='
-                    background-color:#111111;
+                    background-color:#ffffff;
+                    color:#000000;
                     padding: 16px;
                     border-radius: 10px;
-                    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+                    box-shadow: 0 0 10px rgba(0,0,0,0.08);
                     font-size: 15px;
                     line-height: 1.6;
-                    margin-bottom: -10px;
+                    margin-bottom: 0px;
                 '>
-                    <strong style='font-size: 17px;'>📊 Price Anomaly Explanation</strong><br>
+                    <strong style='font-size: 25px;'> Price Anomaly Explanation</strong><br>
                     • Mean price for <b>{brand}</b>: ₹{mean_price:.2f}<br>
                     • Std deviation: ₹{std_price:.2f}<br>
                     • Z-score: {z_score_price:.2f}<br>
@@ -146,7 +148,7 @@ if uploaded_file and product_text and product_price and brand:
         st.markdown("#### Contribution Breakdown")
         labels = ['Text', 'Image', 'Price']
         scores = [text_score, image_score, price_score]
-        fig, ax = plt.subplots(figsize=(1.8, 1.0))
+        fig, ax = plt.subplots(figsize=(1.8, 1.8))
         bars = ax.barh(labels, scores, color=['#F39C12', '#3498DB', '#E74C3C'])
         for bar in bars:
             width = bar.get_width()
