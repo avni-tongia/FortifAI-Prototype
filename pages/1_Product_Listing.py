@@ -65,10 +65,29 @@ except:
 st.set_page_config(page_title="Product Fraud Detection", layout="wide")
 st.title("🛡️ Product Listing Fraud Detection System")
 
-uploaded_file = st.file_uploader("Upload Product Image", type=['jpg', 'jpeg', 'png'])
-product_text = st.text_area("Enter Product Title/Description")
-product_price = st.number_input("Enter Product Price (USD)", min_value=0.0, format="%.2f")
-brand = st.text_input("Enter Product Brand")
+# Split into left and right columns
+left_col, right_col = st.columns([1, 2.2])
+
+# Top row: aligned labels
+with left_col:
+    st.markdown("<div style='padding-top:8px; font-size:16px;'>📷 Upload Product Image</div>", unsafe_allow_html=True)
+with right_col:
+    st.markdown("**Product Title / Description**")
+
+# Second row: uploader and input
+with left_col:
+    uploaded_file = st.file_uploader("", type=['jpg', 'jpeg', 'png'], label_visibility="collapsed")
+
+with right_col:
+    product_text = st.text_area("", height=90, label_visibility="collapsed")
+
+    # Bottom row: price and brand
+    col1, col2 = st.columns(2)
+    with col1:
+        product_price = st.number_input("Price (INR)", min_value=0.0, format="%.2f")
+    with col2:
+        brand = st.text_input("Brand Name")
+
 
 if uploaded_file and product_text and product_price and brand:
     image_embedding = get_image_embedding(uploaded_file)
@@ -92,33 +111,53 @@ if uploaded_file and product_text and product_price and brand:
     else:
         risk_level = "Low Risk"
 
-    st.markdown(f"### 🧮 Fraud Risk Score: **{final_score:.2f}** — {risk_level}")
+    st.markdown(
+    f"<h3 style='text-align: center;'> Fraud Risk Score: <span style='color:#FF4B4B'>{final_score:.2f}</span> — {risk_level}</h3>",
+    unsafe_allow_html=True)
+    left, right = st.columns([1.5, 1])
 
-    if mean_price is not None:
-        st.markdown(
-            f"**📊 Price Anomaly Explanation:**  \n"
-            f"- Mean price for `{brand}`: ₹{mean_price:.2f}  \n"
-            f"- Std deviation: ₹{std_price:.2f}  \n"
-            f"- Z-score: {z_score_price:.2f}  \n"
-            f"- Your price: ₹{product_price:.2f}")
+    with left:
+        if mean_price is not None:
+            st.markdown("""
+                <div style='
+                    background-color:#111111;
+                    padding: 16px;
+                    border-radius: 10px;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+                    font-size: 15px;
+                    line-height: 1.6;
+                    margin-bottom: -10px;
+                '>
+                    <strong style='font-size: 17px;'>📊 Price Anomaly Explanation</strong><br>
+                    • Mean price for <b>{brand}</b>: ₹{mean_price:.2f}<br>
+                    • Std deviation: ₹{std_price:.2f}<br>
+                    • Z-score: {z_score_price:.2f}<br>
+                    • Your price: ₹{product_price:.2f}
+                </div>
+            """.format(
+                brand=brand.upper(),
+                mean_price=mean_price,
+                std_price=std_price,
+                z_score_price=z_score_price,
+                product_price=product_price
+            ), unsafe_allow_html=True)
 
-    else:
-        st.warning(f"No pricing data found for brand: {brand}")
+    with right:
+        st.markdown("#### Contribution Breakdown")
+        labels = ['Text', 'Image', 'Price']
+        scores = [text_score, image_score, price_score]
+        fig, ax = plt.subplots(figsize=(1.8, 1.0))
+        bars = ax.barh(labels, scores, color=['#F39C12', '#3498DB', '#E74C3C'])
+        for bar in bars:
+            width = bar.get_width()
+            ax.text(width + 0.01, bar.get_y() + bar.get_height() / 2,
+                    f"{width:.2f}", va='center', fontsize=8)
+        ax.set_xlim(0, 1)
+        ax.set_title("Fraud Risk Contribution", fontsize=9)
+        ax.tick_params(axis='y', labelsize=8)
+        ax.tick_params(axis='x', labelsize=8)
+        st.pyplot(fig)
 
-    st.markdown("#### 📊 Contribution Breakdown")
-    labels = ['Text', 'Image', 'Price']
-    scores = [text_score, image_score, price_score]
-    fig, ax = plt.subplots(figsize=(5, 2.5))
-    bars = ax.barh(labels, scores, color=['#F39C12', '#3498DB', '#E74C3C'])
-    for bar in bars:
-        width = bar.get_width()
-        ax.text(width + 0.01, bar.get_y() + bar.get_height() / 2,
-                f"{width:.2f}", va='center', fontsize=8)
-    ax.set_xlim(0, 1)
-    ax.set_title("Fraud Risk Contribution", fontsize=10)
-    ax.tick_params(axis='y', labelsize=9)
-    ax.tick_params(axis='x', labelsize=8)
-    st.pyplot(fig)
 
     st.markdown("#### 📝 Moderator Feedback")
     feedback = st.radio("Is this prediction correct?", ["Correct (Fraud)", "Incorrect (Legit)"])
